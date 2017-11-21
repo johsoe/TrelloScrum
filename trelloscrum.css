@@ -1,5 +1,5 @@
 .list-total {
-	color: #006580;
+	color: #ff4d79;
 	font-size: 16px;
 	font-weight: bold;
 	float: right;
@@ -8,7 +8,7 @@
 }
 .board-header-btns .list-total{ /* only targets the board totals */
 	line-height:30px;
-	color: #60c5f0;
+	color: #ff4d79;
 }
 
 .list-total .cpoints{
@@ -28,10 +28,10 @@
 }
 
 .badge-points {
-	background-color: #006580 !important;
-	border-color: #005b72 !important;
-	border-bottom-color: #004b5f !important;
-	color: #e1fafb !important;
+	background-color: #ff4d79 !important;
+	border-color: #ff4d79 !important;
+	border-bottom-color: #ff4d79 !important;
+	color: #ffffff !important;
 	float: right;
 	text-align: right;
 	background-repeat: no-repeat !important;

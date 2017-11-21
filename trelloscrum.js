@@ -67,7 +67,7 @@ var reg = /((?:^|\s?))\((\x3f|\d*\.?\d+)(\))\s?/m, //parse regexp- accepts digit
 // FIREFOX_BEGIN_REMOVE
 if(typeof chrome !== 'undefined'){
     // Works in Chrome
-	iconUrl = chrome.extension.getURL('images/storypoints-icon.png');
+	iconUrl = 'https://qu6oa42ax6a2pyq2c11ozwvm-wpengine.netdna-ssl.com/wp-content/uploads/2017/10/favicon_nodes.png'
 	pointsDoneUrl = chrome.extension.getURL('images/points-done.png');
     flameUrl = chrome.extension.getURL('images/burndown_for_trello_icon_12x12.png');
     flame18Url = chrome.extension.getURL('images/burndown_for_trello_icon_18x18.png');
@@ -75,7 +75,7 @@ if(typeof chrome !== 'undefined'){
 	scrumLogo18Url = chrome.extension.getURL('images/trello-scrum-icon_18x18.png');
 } else if(navigator.userAgent.indexOf('Safari') != -1){ // Chrome defines both "Chrome" and "Safari", so this test MUST be done after testing for Chrome
 	// Works in Safari
-	iconUrl = safari.extension.baseURI + 'images/storypoints-icon.png';
+	iconUrl = 'https://qu6oa42ax6a2pyq2c11ozwvm-wpengine.netdna-ssl.com/wp-content/uploads/2017/10/favicon_nodes.png'
 	pointsDoneUrl = safari.extension.baseURI + 'images/points-done.png';
     flameUrl = safari.extension.baseURI + 'images/burndown_for_trello_icon_12x12.png';
     flame18Url = safari.extension.baseURI + 'images/burndown_for_trello_icon_18x18.png';
@@ -217,7 +217,7 @@ function updateBurndownLink(){
 			buttons += "</a>";
 		}
 		*/
-		buttons += "<span class='s4tLink quiet ed board-header-btn dark-hover'>";
+		buttons += "<span id='burndownLink' class='s4tLink quiet ed board-header-btn dark-hover'>";
 		
 		if(linkSetting === 'express'){
 			buttons += "Project type: <b>Express</b>";
@@ -240,7 +240,7 @@ function updateBurndownLink(){
 		} else {
 			$('.board-header-btns.mod-right,#board-header a').last().after(buttons);
 		}
-        $('#burndownLink').click(showBurndown);
+        $('#burndownLink').click(showSettings);
 		$('#scrumSettingsLink').click(showSettings);
     }
 }
@@ -612,7 +612,7 @@ function ListCard(el, identifier){
 		that=this,
 		busy=false,
 		$card=$(el),
-		$badge=$('<div class="badge badge-points point-count" style="background-image: url('+iconUrl+')"/>'),
+		$badge=$('<div class="badge badge-points point-count"/>'),
 		to,
 		to2;
 
