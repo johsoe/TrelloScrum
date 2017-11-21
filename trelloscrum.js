@@ -49,11 +49,12 @@ var _pointsAttr = ['cpoints', 'points'];
 
 // All settings and their defaults.
 var S4T_SETTINGS = [];
-var SETTING_NAME_LINK_STYLE = "burndownLinkStyle";
+var SETTING_NAME_PROJECT_TYPE = "projectType";
 var SETTING_NAME_ESTIMATES = "estimatesSequence";
-var S4T_ALL_SETTINGS = [SETTING_NAME_LINK_STYLE, SETTING_NAME_ESTIMATES];
+var S4T_ALL_SETTINGS = [SETTING_NAME_PROJECT_TYPE, SETTING_NAME_ESTIMATES];
 var S4T_SETTING_DEFAULTS = {};
-S4T_SETTING_DEFAULTS[SETTING_NAME_LINK_STYLE] = 'full';
+var S4T_ESTIMATION_BUF = {"express" : 1.0, "standard" : 1.5, "enterprise" : 2.0};
+S4T_SETTING_DEFAULTS[SETTING_NAME_PROJECT_TYPE] = 'standard';
 S4T_SETTING_DEFAULTS[SETTING_NAME_ESTIMATES] = _pointSeq.join();
 refreshSettings(); // get the settings right away (may take a little bit if using Chrome cloud storage)
 
@@ -205,7 +206,8 @@ function updateBurndownLink(){
 		var buttons = "";
 
 		// Link for Burndown Charts
-		var linkSetting = S4T_SETTINGS[SETTING_NAME_LINK_STYLE];
+		var linkSetting = S4T_SETTINGS[SETTING_NAME_PROJECT_TYPE];
+		/*
 		if(linkSetting !== 'none'){
 			buttons += "<a id='burndownLink' class='s4tLink quiet ed board-header-btn dark-hover' href='#'>";
 			buttons += "<span class='icon-sm board-header-btn-icon'><img src='"+flameUrl+"' width='12' height='12'/></span>";
@@ -214,9 +216,22 @@ function updateBurndownLink(){
 			}
 			buttons += "</a>";
 		}
+		*/
+		buttons += "<span class='s4tLink quiet ed board-header-btn dark-hover'>";
+		
+		if(linkSetting === 'express'){
+			buttons += "Project type: <b>Express</b>";
+		}
+		else if(linkSetting === 'standard'){
+			buttons += "Project type: <b>Standard</b>";
+		}
+		else {
+			buttons += "Project type: <b>Enterprise</b>";
+		}
+		buttons += "</span>";
 		// Link for settings
 		buttons += "<a id='scrumSettingsLink' class='s4tLink quiet ed board-header-btn dark-hover' href='#'>";
-		buttons += "<span class='icon-sm board-header-btn-icon'><img src='"+scrumLogoUrl+"' width='12' height='12' title='Settings: Scrum for Trello'/></span>";
+		buttons += "<span class='icon-sm board-header-btn-icon'><img src='https://qu6oa42ax6a2pyq2c11ozwvm-wpengine.netdna-ssl.com/wp-content/uploads/2017/10/favicon_nodes.png' width='20' height='20' title='Settings: Scrum for Trello'/></span>";
 		//buttons += "<span class='text board-header-btn-text'>Settings</span>"; // too big :-/ icon only for now
 		buttons += "</a>";
 		var showOnLeft = true;
@@ -288,12 +303,12 @@ function showSettings()
 	// Create the Settings form.
 	{
 		// Load the current settings (with defaults in case Settings haven't been set).
-		var setting_link = S4T_SETTINGS[SETTING_NAME_LINK_STYLE];
+		var setting_link = S4T_SETTINGS[SETTING_NAME_PROJECT_TYPE];
 		var setting_estimateSeq = S4T_SETTINGS[SETTING_NAME_ESTIMATES];
 	
 		var settingsDiv = $('<div/>', {style: "padding:0px 10px;font-family:'Helvetica Neue', Arial, Helvetica, sans-serif;"});
 		var iframeHeader = $('<h3/>', {style: 'text-align: center;'});
-		iframeHeader.text('Scrum for Trello');
+		iframeHeader.text('Nodes Estimation for Trello');
 		var settingsHeader = $('<h3/>', {style: 'text-align: center;margin-bottom:0px'});
 		settingsHeader.text('Settings');
 		var settingsInstructions = $('<div/>', {style: 'margin-bottom:10px'}).html('These settings affect how Scrum for Trello appears to <em>you</em> on all boards.  When you&apos;re done, remember to click "Save Settings" below.');
@@ -302,31 +317,31 @@ function showSettings()
 		// How the 'Burndown Chart' link should appear (if at all).
 		var fieldset_burndownLink = $('<fieldset/>');
 		var legend_burndownLink = $('<legend/>');
-		legend_burndownLink.text("Burndown Chart link");
+		legend_burndownLink.text("Project type");
 		var burndownLinkSetting_radioName = 'burndownLinkSetting';
 		fieldset_burndownLink.append(legend_burndownLink);
-			var burndownRadio_full = $('<input/>', {type: 'radio', name: burndownLinkSetting_radioName, id: 'link_full', value: 'full'});
-			if(setting_link == 'full'){
+			var burndownRadio_full = $('<input/>', {type: 'radio', name: burndownLinkSetting_radioName, id: 'link_full', value: 'express'});
+			if(setting_link == 'express'){
 				burndownRadio_full.prop('checked', true);
 			}
 			var label_full = $('<label/>', {for: 'link_full'});
-			label_full.text('Enable "Burndown Chart" link (recommended)');
+			label_full.text('Express');
 			fieldset_burndownLink.append(burndownRadio_full).append(label_full).append("<br/>");
 
-			var burndownRadio_icon = $('<input/>', {type: 'radio', name: burndownLinkSetting_radioName, id: 'link_icon', value: 'icon'});
-			if(setting_link == 'icon'){
+			var burndownRadio_icon = $('<input/>', {type: 'radio', name: burndownLinkSetting_radioName, id: 'link_icon', value: 'standard'});
+			if(setting_link == 'standard'){
 				burndownRadio_icon.prop('checked', true);
 			}
 			var label_icon = $('<label/>', {for: 'link_icon'});
-			label_icon.text('Icon only');
+			label_icon.text('Standard');
 			fieldset_burndownLink.append(burndownRadio_icon).append(label_icon).append("<br/>");
 
-			var burndownRadio_none = $('<input/>', {type: 'radio', name: burndownLinkSetting_radioName, id: 'link_none', value: 'none'});
-			if(setting_link == 'none'){
+			var burndownRadio_none = $('<input/>', {type: 'radio', name: burndownLinkSetting_radioName, id: 'link_none', value: 'enterprise'});
+			if(setting_link == 'enterprise'){
 				burndownRadio_none.prop('checked', true);
 			}
 			var label_none = $('<label/>', {for: 'link_none'});
-			label_none.text('Disable completely');
+			label_none.text('Enterprise');
 			fieldset_burndownLink.append(burndownRadio_none).append(label_none).append("<br/>");
 		
 		// Which estimate buttons should show up.
@@ -355,7 +370,7 @@ function showSettings()
 			e.preventDefault();
 
 			// Save the settings (persists them using Chrome cloud, LocalStorage, or Cookies - in that order of preference if available).
-			S4T_SETTINGS[SETTING_NAME_LINK_STYLE] = $('#'+settingsFrameId).contents().find('input:radio[name='+burndownLinkSetting_radioName+']:checked').val();
+			S4T_SETTINGS[SETTING_NAME_PROJECT_TYPE] = $('#'+settingsFrameId).contents().find('input:radio[name='+burndownLinkSetting_radioName+']:checked').val();
 			S4T_SETTINGS[SETTING_NAME_ESTIMATES] = $('#'+settingsFrameId).contents().find('#'+estimateFieldId).val();
 
 			// Persist all settings.
@@ -375,26 +390,12 @@ function showSettings()
 		settingsForm.append(saveButton);
 		settingsForm.append(savedIndicator);
 	}
-	
-	// Quick start instructions.
-	var quickStartDiv = $('<div>\
-		<h4 style="margin-top:0px;margin-bottom:0px">Getting started</h4>\
-		<ol style="margin-top:0px">\
-			<li>To add an estimate to a card, first <strong>click a card</strong> to open it</li>\
-			<li><strong>Click the title of the card</strong> to "edit" the title.</li>\
-			<li>Once the Card title is in edit-mode, blue number buttons will appear. <strong>Click one of the buttons</strong> to set that as the estimate.</li>\
-		</ol>\
-	</div>');
-
-	var moreInfoLink = $('<small>For more information, see <a href="http://scrumfortrello.com">ScrumForTrello.com</a></small>');
 
 	// Add each of the components to build the iframe (all done here to make it easier to re-order them).
 	settingsDiv.append(iframeHeader);
-	settingsDiv.append(quickStartDiv);
 	settingsDiv.append(settingsHeader);
 	settingsDiv.append(settingsInstructions);
 	settingsDiv.append(settingsForm);
-	settingsDiv.append(moreInfoLink);
 
 	// Trello swallows normal input, so things like checkboxes and radio buttons don't work right... so we stuff everything in an iframe.
 	var iframeObj = $('<iframe/>', {frameborder: '0',
@@ -455,6 +456,8 @@ function computeTotal(){
 	ctto = setTimeout(function(){
 		var $title = $('.board-header-btns.mod-right,#board-header a');
 		var $total = $title.children('.list-total').empty();
+		var setting_project_type = S4T_SETTINGS[SETTING_NAME_PROJECT_TYPE];
+		var bufFactor = S4T_ESTIMATION_BUF[setting_project_type];
 		if ($total.length == 0)
 			$total = $('<span/>', {class: "list-total"}).appendTo($title);
 
@@ -516,6 +519,8 @@ function List(el){
 		self._calcInner();
     }, 500, true); // executes right away unless over its 500ms threshold since the last execution
 	this._calcInner	= function(e){ // don't call this directly. Call calc() instead.
+		var setting_project_type = S4T_SETTINGS[SETTING_NAME_PROJECT_TYPE];
+		var bufFactor = S4T_ESTIMATION_BUF[setting_project_type];
 		//if(e&&e.target&&!$(e.target).hasClass('list-card')) return; // TODO: REMOVE - What was this? We never pass a param into this function.
 		clearTimeout(to);
 		to = setTimeout(function(){
@@ -533,8 +538,12 @@ function List(el){
 					}
 				});
 				var scoreTruncated = round(score);
+				var scoreWithBuf = round(scoreTruncated * bufFactor)
 				var scoreSpan = $('<span/>', {class: attr}).text( (scoreTruncated>0) ? scoreTruncated : '' );
-				$total.append(scoreSpan);
+				var scoreBufSpan = $('<span/>', {class: attr}).text( (scoreWithBuf>0) ? scoreWithBuf : '' );
+				console.log('DEBUG: scoreTruncated: ' + scoreTruncated + ' - bufFactor: ' + bufFactor + ' - scoreWithBuf: ' + scoreWithBuf);
+				//$total.append(scoreSpan);
+				$total.append(scoreBufSpan);
 				computeTotal();
 			}
 		});

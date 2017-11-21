@@ -1,7 +1,7 @@
 {
-	"name": "Scrum for Trello",
-	"version": "1.99",
-	"description": "Adds Scrum to your Trello",
+	"name": "Nodes Trello",
+	"version": "0.0.1",
+	"description": "Adds Nodes estimations to Trello",
 	"content_scripts": [
 		{
 			"matches": ["https://trello.com/*"],
