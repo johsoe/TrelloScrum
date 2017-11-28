@@ -42,6 +42,7 @@ var debounce = function (func, threshold, execAsap) {
 // For MutationObserver
 var obsConfig = { childList: true, characterData: true, attributes: false, subtree: true };
 
+var _defaultWeekTotal = 37.5;
 //default story point picker sequence (can be overridden in the Scrum for Trello 'Settings' popup)
 var _pointSeq = ['?', 0, .25, 1, 2, 3, 5, 7.5, 15, 22.5, 30, 37.5];
 //attributes representing points values for card
@@ -51,11 +52,13 @@ var _pointsAttr = ['cpoints', 'points'];
 var S4T_SETTINGS = [];
 var SETTING_NAME_PROJECT_TYPE = "projectType";
 var SETTING_NAME_ESTIMATES = "estimatesSequence";
-var S4T_ALL_SETTINGS = [SETTING_NAME_PROJECT_TYPE, SETTING_NAME_ESTIMATES];
+var SETTING_NAME_WEEK_TOTAL = "weekTotal";
+var S4T_ALL_SETTINGS = [SETTING_NAME_PROJECT_TYPE, SETTING_NAME_ESTIMATES, SETTING_NAME_WEEK_TOTAL];
 var S4T_SETTING_DEFAULTS = {};
 var S4T_ESTIMATION_BUF = {"express" : 1.0, "standard" : 1.5, "enterprise" : 2.0};
 S4T_SETTING_DEFAULTS[SETTING_NAME_PROJECT_TYPE] = 'standard';
 S4T_SETTING_DEFAULTS[SETTING_NAME_ESTIMATES] = _pointSeq.join();
+S4T_SETTING_DEFAULTS[SETTING_NAME_WEEK_TOTAL] = _defaultWeekTotal;
 refreshSettings(); // get the settings right away (may take a little bit if using Chrome cloud storage)
 
 //internals
@@ -199,7 +202,7 @@ var recalcTotalsObserver = new CrossBrowser.MutationObserver(function(mutations)
 recalcTotalsObserver.observe(document.body, obsConfig);
 
 // Refreshes the link to the Burndown Chart dialog.
-function updateBurndownLink(){
+function updateProjectType(){
     // Add the link for Burndown Charts
     //$('.s4tLink').remove();
     if($('.s4tLink').length === 0){
@@ -305,6 +308,7 @@ function showSettings()
 		// Load the current settings (with defaults in case Settings haven't been set).
 		var setting_link = S4T_SETTINGS[SETTING_NAME_PROJECT_TYPE];
 		var setting_estimateSeq = S4T_SETTINGS[SETTING_NAME_ESTIMATES];
+		var setting_weekTotal = S4T_SETTINGS[SETTING_NAME_WEEK_TOTAL];
 	
 		var settingsDiv = $('<div/>', {style: "padding:0px 10px;font-family:'Helvetica Neue', Arial, Helvetica, sans-serif;"});
 		var iframeHeader = $('<h3/>', {style: 'text-align: center;'});
@@ -366,12 +370,36 @@ function showSettings()
 											});
 			fieldset_estimateButtons.append(restoreDefaultsButton);
 
+
+		// Week total
+		var fieldset_weekTotal = $('<fieldset/>', {style: 'margin-top:5px'});
+		var legend_weekTotal = $('<legend/>');
+		legend_weekTotal.text("Week total");
+		fieldset_weekTotal.append(legend_weekTotal);
+			var explanation = $('<div/>').text("Specify the total amount of sprint points in one Sprint");
+			fieldset_weekTotal.append(explanation);
+			
+			var weekTotalFieldId = 'weekTotalToUse';
+			var weekTotalField = $('<input/>', {id: weekTotalFieldId, size: 40, val: setting_weekTotal});
+			fieldset_weekTotal.append(weekTotalField);
+			
+			var titleTextStr = "Original week total is: " + _defaultWeekTotal;
+			var restoreDefaultsButton = $('<button/>')
+											.text('restore to original value')
+											.attr('title', titleTextStr)
+											.click(function(e){
+												e.preventDefault();
+												$('#'+settingsFrameId).contents().find('#'+weekTotalFieldId).val(_defaultWeekTotal);
+											});
+											fieldset_weekTotal.append(restoreDefaultsButton);
+
 		var saveButton = $('<button/>', {style:'margin-top:5px'}).text('Save Settings').click(function(e){
 			e.preventDefault();
 
 			// Save the settings (persists them using Chrome cloud, LocalStorage, or Cookies - in that order of preference if available).
 			S4T_SETTINGS[SETTING_NAME_PROJECT_TYPE] = $('#'+settingsFrameId).contents().find('input:radio[name='+burndownLinkSetting_radioName+']:checked').val();
 			S4T_SETTINGS[SETTING_NAME_ESTIMATES] = $('#'+settingsFrameId).contents().find('#'+estimateFieldId).val();
+			S4T_SETTINGS[SETTING_NAME_WEEK_TOTAL] = $('#'+settingsFrameId).contents().find('#'+weekTotalFieldId).val();
 
 			// Persist all settings.
 			$.each(S4T_ALL_SETTINGS, function(i, settingName){
@@ -387,6 +415,7 @@ function showSettings()
 		// Set up the form (all added down here to be easier to change the order).
 		settingsForm.append(fieldset_burndownLink);
 		settingsForm.append(fieldset_estimateButtons);
+		settingsForm.append(fieldset_weekTotal);
 		settingsForm.append(saveButton);
 		settingsForm.append(savedIndicator);
 	}
@@ -471,7 +500,7 @@ function computeTotal(){
 			$total.append(scoreSpan);
 		}
         
-        updateBurndownLink(); // the burndown link and the total are on the same bar... so now they'll be in sync as to whether they're both there or not.
+        updateProjectType(); // the burndown link and the total are on the same bar... so now they'll be in sync as to whether they're both there or not.
 	});
 };
 
@@ -494,8 +523,13 @@ function List(el){
 
 	var $list=$(el),
 		$total=$('<span class="list-total">'),
+		$pointsHolder = $('<div class="list-total-points">'),
+		$platformHolder = $('<div class="list-total-platform">'),
 		busy = false,
 		to;
+
+	$total.append($pointsHolder).append($platformHolder);
+	$total.appendTo($list.find('.list-title,.list-header'));
 
 	function readCard($c){
 		if($c.target) {
@@ -521,29 +555,68 @@ function List(el){
 	this._calcInner	= function(e){ // don't call this directly. Call calc() instead.
 		var setting_project_type = S4T_SETTINGS[SETTING_NAME_PROJECT_TYPE];
 		var bufFactor = S4T_ESTIMATION_BUF[setting_project_type];
+		var totalPrWeek = S4T_SETTINGS[SETTING_NAME_WEEK_TOTAL];
 		//if(e&&e.target&&!$(e.target).hasClass('list-card')) return; // TODO: REMOVE - What was this? We never pass a param into this function.
 		clearTimeout(to);
 		to = setTimeout(function(){
-			$total.empty().appendTo($list.find('.list-title,.list-header'));
+			$pointsHolder.empty();
+			$platformHolder.empty();
+
 			for (var i in _pointsAttr){
 				var score=0,
+					isConsumed = i == 0,
 					attr = _pointsAttr[i];
+				var platformScores = {'android':0, 'ios':0, 'backend':0, 'frontend':0};
 				$list.find('.list-card:not(.placeholder)').each(function(){
 					if(!this.listCard) return;
+					
 					if(!isNaN(Number(this.listCard[attr].points))){
 						// Performance note: calling :visible in the selector above leads to noticible CPU usage.
 						if(jQuery.expr.filters.visible(this)){
-							score+=Number(this.listCard[attr].points);
+							//console.log('card: ', this);
+							score += Number(this.listCard[attr].points);
+							if( ! isConsumed) {
+								platformScores[this.listCard[attr].platform] += Number(this.listCard[attr].points);
+							}
+							
 						}
 					}
 				});
+
 				var scoreTruncated = round(score);
-				var scoreWithBuf = round(scoreTruncated * bufFactor)
-				var scoreSpan = $('<span/>', {class: attr}).text( (scoreTruncated>0) ? scoreTruncated : '' );
+				var scoreWithBuf = round(scoreTruncated * bufFactor);
+				
+				//var scoreSpan = $('<span/>', {class: attr}).text( (scoreTruncated>0) ? scoreTruncated : '' );
+
+
 				var scoreBufSpan = $('<span/>', {class: attr}).text( (scoreWithBuf>0) ? scoreWithBuf : '' );
-				console.log('DEBUG: scoreTruncated: ' + scoreTruncated + ' - bufFactor: ' + bufFactor + ' - scoreWithBuf: ' + scoreWithBuf);
-				//$total.append(scoreSpan);
-				$total.append(scoreBufSpan);
+				
+				if(!isConsumed) {
+					var percentageOfWeek = round(scoreWithBuf / totalPrWeek) * 100;
+
+					scoreBufSpan.append('&nbsp;(' + percentageOfWeek + '%)');
+
+					if(platformScores['android'] > 0) {
+						var androidSpan = $('<span/>', {class: 'top-list-item top-list-android'}).text(platformScores['android']);
+						$platformHolder.append(androidSpan);
+					}
+					
+
+					if(platformScores['ios'] > 0) {
+						var iosSpan = $('<span/>', {class: 'top-list-item top-list-ios'}).text(platformScores['ios']);
+						$platformHolder.append(iosSpan);
+					}
+					
+
+					if(platformScores['backend'] > 0) {
+						var vaporSpan = $('<span/>', {class: 'top-list-item top-list-backend'}).text(platformScores['backend']);
+						$platformHolder.append(vaporSpan);
+					}
+				}
+				
+				
+
+				$pointsHolder.append(scoreBufSpan);
 				computeTotal();
 			}
 		});
@@ -609,6 +682,7 @@ function ListCard(el, identifier){
 		consumed=identifier!=='points',
 		regexp=consumed?regC:reg,
 		parsed,
+		$platform,
 		that=this,
 		busy=false,
 		$card=$(el),
@@ -628,7 +702,9 @@ function ListCard(el, identifier){
 		clearTimeout(to);
 
 		to = setTimeout(function(){
-			var $title=$card.find('.js-card-name');
+			var $title = $card.find('.js-card-name');
+			$platform = $card.find('.card-label').text().toLowerCase();
+			console.log($platform);
 			if(!$title[0])return;
 			// This expression gets the right value whether Trello has the card-number span in the DOM or not (they recently removed it and added it back).
 			var titleTextContent = (($title[0].childNodes.length > 1) ? $title[0].childNodes[$title[0].childNodes.length-1].textContent : $title[0].textContent);
@@ -680,6 +756,10 @@ function ListCard(el, identifier){
 
 	this.__defineGetter__('points',function(){
 		return parsed?points:''
+	});
+
+	this.__defineGetter__('platform',function(){
+		return $platform;
 	});
 
 	var cardShortIdObserver = new CrossBrowser.MutationObserver(function(mutations){
@@ -928,7 +1008,7 @@ function onSettingsUpdated(){
 	
 	// Refresh the links because link-settings may have changed.
 	$('.s4tLink').remove();
-	updateBurndownLink();
+	updateProjectType();
 } // end onSettingsUpdated()
 
 /**

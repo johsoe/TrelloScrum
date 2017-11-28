@@ -1,6 +1,7 @@
 .list-total {
-	color: #ff4d79;
-	font-size: 16px;
+	/* color: #ff4d79; */
+	color: #444444;
+	font-size: 18px;
 	font-weight: bold;
 	float: right;
 	margin: 1px 0px 0 0;
@@ -8,7 +9,8 @@
 }
 .board-header-btns .list-total{ /* only targets the board totals */
 	line-height:30px;
-	color: #ff4d79;
+	/* color: #ff4d79; */
+	color: #333333;
 }
 
 .list-total .cpoints{
@@ -27,16 +29,51 @@
 	display: block !important;
 }
 
-.badge-points {
-	background-color: #ff4d79 !important;
-	border-color: #ff4d79 !important;
-	border-bottom-color: #ff4d79 !important;
+.top-list-android {
+	background-color: #61BD4F !important;
+	border-color: #61BD4F !important;
+	border-bottom-color: rgb(64, 124, 51) !important;
+}
+
+.top-list-ios {
+	background-color: #FFAB4A !important;
+	border-color: #FFAB4A !important;
+	border-bottom-color: rgb(199, 133, 59) !important;
+}
+
+.top-list-backend {
+	background-color: #0079BF !important;
+	border-color: #0079BF !important;
+	border-bottom-color:rgb(1, 83, 128) !important;
+}
+
+.top-list-item {
 	color: #ffffff !important;
 	float: right;
 	text-align: right;
 	background-repeat: no-repeat !important;
 	background-position: 3px 3px !important;
-	padding: 0 4px 0 17px !important;
+	padding: 0 8px 0 8px !important;
+	margin: 0 4px 0 0;
+	border-radius: 3px;
+	font-size: 12px;
+	line-height: 18px;
+}
+
+.list-total-platform {
+	margin: 8px 0 0 0;
+}
+
+.badge-points {
+	background-color: #444444 !important;
+	border-color: #444444 !important;
+	border-bottom-color: #000000 !important;
+	color: #ffffff !important;
+	float: right;
+	text-align: right;
+	background-repeat: no-repeat !important;
+	background-position: 3px 3px !important;
+	padding: 0 8px 0 8px !important;
 	border-radius: 3px;
 	font-size: 12px;
 	line-height: 18px;
