@@ -42,21 +42,25 @@ var debounce = function (func, threshold, execAsap) {
 // For MutationObserver
 var obsConfig = { childList: true, characterData: true, attributes: false, subtree: true };
 
-var _defaultWeekTotal = 37.5;
+var _defaultWeekTotal = 32;
 //default story point picker sequence (can be overridden in the Scrum for Trello 'Settings' popup)
 var _pointSeq = ['?', 0, .25, 1, 2, 3, 5, 7.5, 15, 22.5, 30, 37.5];
 //attributes representing points values for card
 var _pointsAttr = ['cpoints', 'points'];
+
+var _defaultProjectBuffer = false;
 
 // All settings and their defaults.
 var S4T_SETTINGS = [];
 var SETTING_NAME_PROJECT_TYPE = "projectType";
 var SETTING_NAME_ESTIMATES = "estimatesSequence";
 var SETTING_NAME_WEEK_TOTAL = "weekTotal";
+var SETTING_NAME_PROJECT_BUFFER = "projectBuffer";
 var S4T_ALL_SETTINGS = [SETTING_NAME_PROJECT_TYPE, SETTING_NAME_ESTIMATES, SETTING_NAME_WEEK_TOTAL];
 var S4T_SETTING_DEFAULTS = {};
 var S4T_ESTIMATION_BUF = {"express" : 1.0, "standard" : 1.5, "enterprise" : 2.0};
 S4T_SETTING_DEFAULTS[SETTING_NAME_PROJECT_TYPE] = 'standard';
+S4T_SETTING_DEFAULTS[SETTING_NAME_PROJECT_BUFFER] = _defaultProjectBuffer;
 S4T_SETTING_DEFAULTS[SETTING_NAME_ESTIMATES] = _pointSeq.join();
 S4T_SETTING_DEFAULTS[SETTING_NAME_WEEK_TOTAL] = _defaultWeekTotal;
 refreshSettings(); // get the settings right away (may take a little bit if using Chrome cloud storage)
@@ -309,6 +313,7 @@ function showSettings()
 		var setting_link = S4T_SETTINGS[SETTING_NAME_PROJECT_TYPE];
 		var setting_estimateSeq = S4T_SETTINGS[SETTING_NAME_ESTIMATES];
 		var setting_weekTotal = S4T_SETTINGS[SETTING_NAME_WEEK_TOTAL];
+		var setting_projectBuffer = S4T_SETTINGS[SETTING_NAME_PROJECT_BUFFER];
 	
 		var settingsDiv = $('<div/>', {style: "padding:0px 10px;font-family:'Helvetica Neue', Arial, Helvetica, sans-serif;"});
 		var iframeHeader = $('<h3/>', {style: 'text-align: center;'});
@@ -393,6 +398,19 @@ function showSettings()
 											});
 											fieldset_weekTotal.append(restoreDefaultsButton);
 
+		// Week total
+		var fieldset_projectBuffer = $('<fieldset/>', {style: 'margin-top:5px'});
+		var legend_projectBuffer = $('<legend/>');
+		legend_projectBuffer.text("Project type buffer");
+		fieldset_projectBuffer.append(legend_projectBuffer);
+			var explanation = $('<div/>').text("Toggle project type buffer for totals in the top of each list");
+			fieldset_projectBuffer.append(explanation);
+			
+			var projectBufferFieldId = 'projectBufferToUse';
+			var projectBufferField = $('<input/>', {type: 'checkbox', id: projectBufferFieldId, size: 40, val: setting_projectBuffer});
+			projectBufferField.prop('checked', setting_projectBuffer);
+			fieldset_projectBuffer.append(projectBufferField);
+
 		var saveButton = $('<button/>', {style:'margin-top:5px'}).text('Save Settings').click(function(e){
 			e.preventDefault();
 
@@ -400,6 +418,7 @@ function showSettings()
 			S4T_SETTINGS[SETTING_NAME_PROJECT_TYPE] = $('#'+settingsFrameId).contents().find('input:radio[name='+burndownLinkSetting_radioName+']:checked').val();
 			S4T_SETTINGS[SETTING_NAME_ESTIMATES] = $('#'+settingsFrameId).contents().find('#'+estimateFieldId).val();
 			S4T_SETTINGS[SETTING_NAME_WEEK_TOTAL] = $('#'+settingsFrameId).contents().find('#'+weekTotalFieldId).val();
+			S4T_SETTINGS[SETTING_NAME_PROJECT_BUFFER] = $('#'+settingsFrameId).contents().find('#'+projectBufferFieldId).val();
 
 			// Persist all settings.
 			$.each(S4T_ALL_SETTINGS, function(i, settingName){
@@ -416,6 +435,7 @@ function showSettings()
 		settingsForm.append(fieldset_burndownLink);
 		settingsForm.append(fieldset_estimateButtons);
 		settingsForm.append(fieldset_weekTotal);
+		settingsForm.append(fieldset_projectBuffer);
 		settingsForm.append(saveButton);
 		settingsForm.append(savedIndicator);
 	}
@@ -525,6 +545,7 @@ function List(el){
 		$total=$('<span class="list-total">'),
 		$pointsHolder = $('<div class="list-total-points">'),
 		$platformHolder = $('<div class="list-total-platform">'),
+		$listTitle = $list.find('list-header-name-assist').text(),
 		busy = false,
 		to;
 
@@ -556,6 +577,10 @@ function List(el){
 		var setting_project_type = S4T_SETTINGS[SETTING_NAME_PROJECT_TYPE];
 		var bufFactor = S4T_ESTIMATION_BUF[setting_project_type];
 		var totalPrWeek = S4T_SETTINGS[SETTING_NAME_WEEK_TOTAL];
+		var projectBufferEnabled = S4T_SETTINGS[SETTING_NAME_PROJECT_BUFFER];
+
+		bufFactor = projectBufferEnabled ? bufFactor : 1;
+
 		//if(e&&e.target&&!$(e.target).hasClass('list-card')) return; // TODO: REMOVE - What was this? We never pass a param into this function.
 		clearTimeout(to);
 		to = setTimeout(function(){
@@ -567,16 +592,29 @@ function List(el){
 					isConsumed = i == 0,
 					attr = _pointsAttr[i];
 				var platformScores = {'android':0, 'ios':0, 'backend':0, 'frontend':0};
+				var isSprintList = false;
 				$list.find('.list-card:not(.placeholder)').each(function(){
 					if(!this.listCard) return;
 					
+					isSprintList = this.listCard[attr].sprintList;
+
 					if(!isNaN(Number(this.listCard[attr].points))){
 						// Performance note: calling :visible in the selector above leads to noticible CPU usage.
 						if(jQuery.expr.filters.visible(this)){
-							//console.log('card: ', this);
+							//console.log('card: ', this.listCard);
 							score += Number(this.listCard[attr].points);
 							if( ! isConsumed) {
-								platformScores[this.listCard[attr].platform] += Number(this.listCard[attr].points);
+								if(this.listCard[attr].platform.indexOf('android') >= 0) {
+									platformScores['android'] += Number(this.listCard[attr].points);
+								}
+								
+								if(this.listCard[attr].platform.indexOf('ios') >= 0) {
+									platformScores['ios'] += Number(this.listCard[attr].points);
+								}
+
+								if(this.listCard[attr].platform.indexOf('backend') >= 0) {
+									platformScores['backend'] += Number(this.listCard[attr].points);
+								}
 							}
 							
 						}
@@ -588,28 +626,44 @@ function List(el){
 				
 				//var scoreSpan = $('<span/>', {class: attr}).text( (scoreTruncated>0) ? scoreTruncated : '' );
 
+				var textContent = i == 0 ? 'Consumed: ' : 'Total: ';
 
-				var scoreBufSpan = $('<span/>', {class: attr}).text( (scoreWithBuf>0) ? scoreWithBuf : '' );
+				var scoreBufSpan = $('<span/>', {class: attr}).text( (scoreWithBuf>0) ? textContent + scoreWithBuf : '' );
 				
 				if(!isConsumed) {
-					var percentageOfWeek = round(scoreWithBuf / totalPrWeek) * 100;
+					//var percentageOfWeek = round(scoreWithBuf / totalPrWeek) * 100;
 
-					scoreBufSpan.append('&nbsp;(' + percentageOfWeek + '%)');
+					// scoreBufSpan.append('&nbsp;(' + percentageOfWeek + '%)');
 
 					if(platformScores['android'] > 0) {
-						var androidSpan = $('<span/>', {class: 'top-list-item top-list-android'}).text(platformScores['android']);
+						var platformScore = round(bufFactor * platformScores['android']);
+						var androidSpan = $('<span/>', {class: 'top-list-item top-list-android'}).text(platformScore);
+						if(isSprintList) {
+							var percentageOfWeek = round(platformScore / totalPrWeek) * 100;
+							androidSpan.append('&nbsp;('+percentageOfWeek+'%)');
+						}
 						$platformHolder.append(androidSpan);
 					}
 					
 
 					if(platformScores['ios'] > 0) {
-						var iosSpan = $('<span/>', {class: 'top-list-item top-list-ios'}).text(platformScores['ios']);
+						var platformScore = round(bufFactor * platformScores['ios']);
+						var iosSpan = $('<span/>', {class: 'top-list-item top-list-ios'}).text(platformScore);
+						if(isSprintList) {
+							var percentageOfWeek = round(platformScore / totalPrWeek) * 100;
+							iosSpan.append('&nbsp;('+percentageOfWeek+'%)');
+						}
 						$platformHolder.append(iosSpan);
 					}
 					
 
 					if(platformScores['backend'] > 0) {
-						var vaporSpan = $('<span/>', {class: 'top-list-item top-list-backend'}).text(platformScores['backend']);
+						var platformScore = round(bufFactor * platformScores['backend']);
+						var vaporSpan = $('<span/>', {class: 'top-list-item top-list-backend'}).text(platformScore);
+						if(isSprintList) {
+							var percentageOfWeek = round(platformScore / totalPrWeek) * 100;
+							vaporSpan.append('&nbsp;('+percentageOfWeek+'%)');
+						}
 						$platformHolder.append(vaporSpan);
 					}
 				}
@@ -682,6 +736,7 @@ function ListCard(el, identifier){
 		consumed=identifier!=='points',
 		regexp=consumed?regC:reg,
 		parsed,
+		$sprintList,
 		$platform,
 		that=this,
 		busy=false,
@@ -704,6 +759,7 @@ function ListCard(el, identifier){
 		to = setTimeout(function(){
 			var $title = $card.find('.js-card-name');
 			$platform = $card.find('.card-label').text().toLowerCase();
+			$sprintList = $title.text().toLowerCase().indexOf('sprint') >= 0;
 			console.log($platform);
 			if(!$title[0])return;
 			// This expression gets the right value whether Trello has the card-number span in the DOM or not (they recently removed it and added it back).
@@ -760,6 +816,10 @@ function ListCard(el, identifier){
 
 	this.__defineGetter__('platform',function(){
 		return $platform;
+	});
+
+	this.__defineGetter__('sprintList',function(){
+		return $sprintList;
 	});
 
 	var cardShortIdObserver = new CrossBrowser.MutationObserver(function(mutations){

@@ -1,9 +1,9 @@
 .list-total {
 	/* color: #ff4d79; */
 	color: #444444;
-	font-size: 18px;
+	font-size: 14px;
 	font-weight: bold;
-	float: right;
+	text-align: right;
 	margin: 1px 0px 0 0;
 	line-height:18px;
 }
@@ -14,7 +14,7 @@
 }
 
 .list-total .cpoints{
-	margin-right:3px;
+	margin-right:10px;
 	opacity: 0.5;
 }
 
@@ -53,7 +53,7 @@
 	text-align: right;
 	background-repeat: no-repeat !important;
 	background-position: 3px 3px !important;
-	padding: 0 8px 0 8px !important;
+	padding: 0 2px 0 2px !important;
 	margin: 0 4px 0 0;
 	border-radius: 3px;
 	font-size: 12px;
